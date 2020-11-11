@@ -9,6 +9,9 @@ import resources.messenger as msg
 import sys
 import datetime as time
 import pickle
+import os
+
+from PIL import Image as image
 
 from socket import *
 from threading import Thread
@@ -24,6 +27,14 @@ class Message():
         self.baseMessage = msg
         self.extension = 'msg'
         self.lenMsg = len(msg)
+
+def addImageToChat(chat: QtWidgets.QTextEdit, name, fname : str):
+    chat.append(name+":")
+    chat.append("")
+    textFinal = chat.toHtml() + "<img src = \"" + fname + "\" width=\"350\"/>";
+    chat.setHtml(textFinal)
+    chat.append("")
+    chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
 
 def addMessageToChat(chat : QtWidgets.QTextEdit, message : str):
     chat.append(message)
@@ -123,6 +134,19 @@ class Client(object):
         except:
             print("not connected")
 
+    def sendImage(self, file, filename):
+        conn = self.conn
+
+        msg = Message(file)
+        msg.fileName = filename
+        msg.extension = 'img'
+
+        msg_string = pickle.dumps(msg)
+        try:
+            conn.send(msg_string)
+        except:
+            print("not connected")
+
     def send(self, message, ext='msg'):
         conn = self.conn
 
@@ -213,15 +237,30 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
-        fname = dialog.selectedFiles()[0]
+        fullname = dialog.selectedFiles()[0]
+        fname, ext = os.path.splitext(fullname)
+        if ext == '.png' or ext ==  '.jpg' or ext == '.jpeg':
+            addImageToChat(self.chat, "me", fname)
 
-        f = open(fname, 'r')
+            try:
+                f = image.open(fullname)
+                self.client.sendImage(f, fname)
+            except:
+                self.logEdit.append("cannot open selected file")
+                return
+        else:
+            addFileMessageToChat(self.chat, "me -> file: " + fname)
 
-        with f:
-            data = f.read()
-            self.client.sendFile(data, fname)
+            try:
+                f = open(fullname, 'r')
 
-        addFileMessageToChat(self.chat, "me -> file: "+fname)
+                with f:
+                    data = f.read()
+                    self.client.sendFile(data, fname)
+
+            except:
+                self.logEdit.append("cannot open selected file")
+                return
 
     def __del__(self):
         self.client.close()
