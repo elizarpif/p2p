@@ -7,6 +7,7 @@ from socket import socket
 from PyQt5 import QtCore, QtGui, QtWidgets
 import resources.messenger as msg
 import sys
+import datetime as time
 from socket import *
 from threading import Thread
 
@@ -46,14 +47,22 @@ class Server(Thread):
                 return
             else:
                 print(f"data = {res.decode('utf-8')}, addr = {addr}")
-                self.textChat.append(res.decode('utf-8'))
-                conn.send(b"response")
+                self.textChat.append( "from some client: " + res.decode("utf-8") )
+                resp = conn.send(b"response")
+                print("conn.send ", resp)
 
-            res = conn.recv(100)
+            try:
+                res = conn.recv(100)
+            except:
+                print("cannot receive")
 
     def close(self):
-        self.sock.close()
-        print("server socket close")
+        try:
+            self.sock.close()
+        except:
+            print("some exception in close connection")
+        finally:
+            print("server socket close")
 
 
 class Message(object):
@@ -61,21 +70,19 @@ class Message(object):
         self.conn = socket()
 
     def connect(self, addr, port):
-        self.conn.connect((addr, port))
+        try:
+            self.conn.connect((addr, int(port)))
+        except:
+            print("cannot connect!")
 
     def send(self, message):
         conn = self.conn
-
         conn.send(message.encode())
-        data = b""
-
-        tmp = conn.recv(1024)
-
-        while tmp:
-            data += tmp
-            tmp = conn.recv(1024)
-
-        print(data.decode("utf-8"))
+        # data = b""
+        #
+        # data += conn.recv(1024)
+        #
+        # print(data.decode("utf-8"))
 
     def close(self):
         self.conn.close()
@@ -86,12 +93,13 @@ class Message(object):
 
 class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
     def __init__(self, port=9000):
-        # Это здесь нужно для доступа к переменным, методам
-        # и т.д. в файле design.py
         super().__init__()
         self.setupUi(self)
         self.connectButton.clicked.connect(self.connect)
         self.sendButton.clicked.connect(self.send)
+
+        self.logEdit.setFontItalic(True)
+        self.logEdit.setStyleSheet("QTextEdit {color:#822E1C}")
 
         self.currentAddr.setText(f"127.0.0.1:{port}")
         self.server = Server(self.chat, '127.0.0.1', port)
@@ -103,28 +111,39 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         connectMsg = "Connect"
         disconnectMsg = "Disconnect"
 
+        # если нажали на коннект
         if self.connectButton.text() == connectMsg:
-            self.client.connect(self.addrLn.text(), int(self.portLn.text()))
-            # self.server.accept()
+            self.client.connect(self.addrLn.text(),self.portLn.text())
 
             self.connectButton.setText(disconnectMsg)
-            self.logLabel.setText("disconnected")
+            self.logLabel.setText("Connected")
 
+            self.addrLn.setDisabled(True)
+            self.portLn.setDisabled(True)
+
+        # если нажали на Дисконнект
         elif self.connectButton.text() == disconnectMsg:
             self.client.close()
-            # self.server.close()
 
             self.connectButton.setText(connectMsg)
-            self.logLabel.setText("connect...")
+            self.logLabel.setText("Disconnected")
+
+            self.addrLn.setEnabled(True)
+            self.portLn.setEnabled(True)
 
     def send(self):
         message = self.lineEdit.text()
         emptyMessage = ""
 
         if message != emptyMessage:
-            self.client.send(message)
-            self.chat.append(message)
-            self.lineEdit.setText(emptyMessage)
+            try:
+                self.client.send(message)
+            except:
+                message += " (cannot send!)"
+                self.logEdit.append(time.datetime.now().strftime("%H:%M:%S") + ": "+ message)
+            finally:
+                self.chat.append("me: " + message)
+                self.lineEdit.setText(emptyMessage)
 
     def __del__(self):
         self.server.close()
