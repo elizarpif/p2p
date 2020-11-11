@@ -16,4 +16,4 @@ python main.py 9001
 ```
 ## Скриншоты
 
-![Сообщения в чате](https://github.com/elizarpif/p2p/blob/develop/screenshotes/6.PNG)
+![Сообщения в чате](https://github.com/elizarpif/p2p/blob/develop/screenshots/6.png)
