@@ -31,22 +31,22 @@ class Message():
         self.fileName = fileName
         self.lenMsg = len(msg)
 
-def addImageToChat(chat: QtWidgets.QTextEdit, name : str, image : str):
-    chat.append(name)
-    chat.append("")
-   # textFinal = chat.toHtml() + "<img src = \"" + image + "\" width=\"350\"/>";
-    str = chat.toHtml() + "<img src = \"" + image + "\" + width=\"350\"/>"
-    print(str)
-    chat.setHtml(str)
-    chat.append("")
-    chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
 
-def addMessageToChat(chat : QtWidgets.QTextEdit, message : str):
+def addImageToChat(chat: QtWidgets.QTextEdit, name: str, image: str):
+    chat.append(name)
+    # str = "<img src = \"" + image + "\" width=\"350\"/>"
+    chat.append("<!doctype html><html><img src="+image+"></html>")
+
+    #chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
+
+
+def addMessageToChat(chat: QtWidgets.QTextEdit, message: str):
     chat.append(message)
     chat.append("")
     chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
 
-def addFileMessageToChat(chat : QtWidgets.QTextEdit, message : str):
+
+def addFileMessageToChat(chat: QtWidgets.QTextEdit, message: str):
     chat.setFontItalic(True)
     addMessageToChat(chat, message)
     chat.setFontItalic(False)
@@ -60,11 +60,13 @@ class tempFile():
     def __init__(self):
         self.isOpen = False
 
+
 # Тот кто принимает сообщения и подключения
 class Server(Thread):
     activeConn: socket
     activeAddr: str
     textChat: QtWidgets.QTextEdit
+    folder: str
 
     def __init__(self, textEdit, ip='127.0.0.1', port=9000):
         Thread.__init__(self)
@@ -73,6 +75,12 @@ class Server(Thread):
         self.sock.listen(1)
 
         self.textChat = textEdit
+
+        self.folder = os.path.join(os.getcwd(), "files")
+        try:
+            os.stat(self.folder)
+        except:
+            os.mkdir(self.folder)
 
     def run(self) -> None:
         while True:
@@ -105,14 +113,10 @@ class Server(Thread):
                         addMessageToChat(self.textChat, "from some client: " + msg.baseMessage)
 
                     if msg.extension == "file":
-                        addFileMessageToChat(self.textChat, "from some client -> file: "+msg.fileName)
-                        print("get file")
-
-                    if msg.extension == "img":
                         if not temp.isOpen:
-                            temp.file = open(msg.fileName, 'wb')
                             temp.isOpen = True
-                            temp.filename = os.path.join(os.getcwd(), msg.fileName)
+                            temp.filename = os.path.join(self.folder, msg.fileName)
+                            temp.file = open(temp.filename, 'wb')
 
                         temp.file.write(msg.baseMessage)
 
@@ -121,16 +125,23 @@ class Server(Thread):
                             temp.isOpen = False
                             temp.file = None
 
-                            #addImageToChat(self.textChat, "from some client -> image: ")
-                            chat = self.textChat
-                            name = temp.filename
-                            chat.append(name)
-                            chat.append("")
-                            # textFinal = chat.toHtml() + "<img src = \"" + image + "\" width=\"350\"/>";
-                            str = chat.toHtml() + "<img src = \"" + name + "\" + width=\"350\"/>"
-                            print(str)
-                            chat.setHtml(str)
-                            chat.append(str)
+                            addFileMessageToChat(self.textChat, "from some client -> file: " + msg.fileName)
+
+                    if msg.extension == "img":
+                        if not temp.isOpen:
+                            temp.isOpen = True
+                            temp.filename = os.path.join(self.folder, msg.fileName)
+                            temp.file = open(temp.filename, 'wb')
+
+                        temp.file.write(msg.baseMessage)
+
+                        if msg.isEnd:
+                            temp.file.close()
+                            temp.isOpen = False
+                            temp.file = None
+
+                            addImageToChat(self.textChat, "from some client -> image: ", temp.filename)
+
                     res = conn.recv(1024)
                 except:
                     e = sys.exc_info()[0]
@@ -143,7 +154,6 @@ class Server(Thread):
         resp = conn.send(b"response")
         print("conn.send ", resp)
 
-
     def __del__(self):
         try:
             self.sock.close()
@@ -151,6 +161,7 @@ class Server(Thread):
             print("some exception in close connection")
         finally:
             print("server socket close")
+
 
 # тот кто отправляет сообщения
 class Client(object):
@@ -197,7 +208,7 @@ class Client(object):
             conn.send(msg_string)
         except:
             e = sys.exc_info()[0]
-            print( e)
+            print(e)
 
     def send(self, message, ext='msg'):
         conn = self.conn
@@ -225,7 +236,7 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         self.connectButton.clicked.connect(self.connect)
         self.sendButton.clicked.connect(self.send)
         self.fileButton.clicked.connect(self.showFileDialog)
-
+        self.chat.textChanged.connect(self.changeText)
         self.logEdit.setFontItalic(True)
         self.logEdit.setStyleSheet("QTextEdit {color:#822E1C}")
 
@@ -234,6 +245,9 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         self.server.start()
 
         self.client = Client()
+
+    def changeText(self):
+        print('h')
 
     def connect(self):
         connectMsg = "Connect"
@@ -277,7 +291,7 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
                 self.lineEdit.setText(emptyMessage)
 
     def showFileDialog(self):
-        dialog = QtWidgets.QFileDialog(self, 'Open File','/Users/yapivov2/')
+        dialog = QtWidgets.QFileDialog(self, 'Open File', '/Users/yapivov2/')
         if dialog.exec_() != QtWidgets.QDialog.Accepted:
             return
 
@@ -285,24 +299,24 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         fname, ext = os.path.splitext(fullname)
         basename = os.path.basename(fullname)
 
-        if ext == '.png' or ext ==  '.jpg' or ext == '.jpeg':
+        if ext == '.png' or ext == '.jpg' or ext == '.jpeg':
             try:
                 img = open(fullname, 'rb')
                 while True:
                     strng = img.read()
                     if not strng:
-                        #self.client.sendMessage(Message(b'1', 'img', basename , True))
+                        self.client.sendMessage(Message(b'1', 'img', basename , True))
                         break
 
-                    self.client.sendMessage(Message(strng, 'img',basename, True))
+                    self.client.sendMessage(Message(strng, 'img', basename, True))
 
                 img.close()
-                addImageToChat(self.chat, "me", fname)
+                addImageToChat(self.chat, "me: " + fname, fname)
 
             except UnicodeDecodeError:
                 e = sys.exc_info()[0]
                 print(f"cannot open selected file{fullname}: ", e)
-                self.logEdit.append("cannot open selected file: "+fullname)
+                self.logEdit.append("cannot open selected file: " + fullname)
 
             except OSError:
                 self.logEdit.append("cannot connect")
@@ -315,6 +329,8 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
                 with f:
                     data = f.read()
                     self.client.sendMessage(Message(data, 'file', basename, True))
+
+                f.close()
 
             except UnicodeDecodeError:
                 self.logEdit.append("cannot open selected file")
