@@ -1,23 +1,17 @@
-# This is a sample Python script.
-
-# Press ⇧F10 to execute it or replace it with your code.
-# Press Double ⇧ to search everywhere for classes, files, tool windows, actions, and settings.
-from socket import socket
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import resources.messenger as msg
 import sys
-import datetime as time
+import datetime
+import time
 import pickle
 import os
-
-from PIL import Image as image
 
 from socket import *
 from threading import Thread
 
 
-class Message():
+class Message:
     baseMessage: str
     extension: str
     fileName: str
@@ -35,9 +29,8 @@ class Message():
 def addImageToChat(chat: QtWidgets.QTextEdit, name: str, image: str):
     chat.append(name)
     # str = "<img src = \"" + image + "\" width=\"350\"/>"
-    chat.append("<!doctype html><html><img src="+image+"></html>")
-
-    #chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
+    chat.append("<!doctype html><html><img src=" + image + "></html>")
+    chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
 
 
 def addMessageToChat(chat: QtWidgets.QTextEdit, message: str):
@@ -50,6 +43,7 @@ def addFileMessageToChat(chat: QtWidgets.QTextEdit, message: str):
     chat.setFontItalic(True)
     addMessageToChat(chat, message)
     chat.setFontItalic(False)
+    chat.verticalScrollBar().setValue(chat.verticalScrollBar().maximum())
 
 
 class tempFile():
@@ -67,6 +61,7 @@ class Server(Thread):
     activeAddr: str
     textChat: QtWidgets.QTextEdit
     folder: str
+    isStopThread: bool
 
     def __init__(self, textEdit, ip='127.0.0.1', port=9000):
         Thread.__init__(self)
@@ -76,6 +71,8 @@ class Server(Thread):
 
         self.textChat = textEdit
 
+        self.isStopThread = False
+
         self.folder = os.path.join(os.getcwd(), "files")
         try:
             os.stat(self.folder)
@@ -83,7 +80,7 @@ class Server(Thread):
             os.mkdir(self.folder)
 
     def run(self) -> None:
-        while True:
+        while not self.isStopThread:
             self.accept()
 
     def activeAddress(self):
@@ -154,13 +151,20 @@ class Server(Thread):
         resp = conn.send(b"response")
         print("conn.send ", resp)
 
-    def __del__(self):
+    def close(self):
         try:
             self.sock.close()
         except:
             print("some exception in close connection")
         finally:
             print("server socket close")
+
+        time.sleep(1)
+        self.isStopThread = True
+        self.join()
+
+    def __del__(self):
+        self.close()
 
 
 # тот кто отправляет сообщения
@@ -223,6 +227,10 @@ class Client(object):
             print("not connected")
 
     def close(self):
+        try:
+            self.conn.send(None)
+        except:
+            print("no conn, close")
         self.conn.close()
 
     def __del__(self):
@@ -236,7 +244,10 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         self.connectButton.clicked.connect(self.connect)
         self.sendButton.clicked.connect(self.send)
         self.fileButton.clicked.connect(self.showFileDialog)
-        self.chat.textChanged.connect(self.changeText)
+
+        self.chat.setReadOnly(True)
+        self.logEdit.setReadOnly(True)
+
         self.logEdit.setFontItalic(True)
         self.logEdit.setStyleSheet("QTextEdit {color:#822E1C}")
 
@@ -245,9 +256,6 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         self.server.start()
 
         self.client = Client()
-
-    def changeText(self):
-        print('h')
 
     def connect(self):
         connectMsg = "Connect"
@@ -284,7 +292,7 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
                 self.client.send(message)
             except:
                 message += " (cannot send!)"
-                self.logEdit.append(time.datetime.now().strftime("%H:%M:%S") + ": " + message)
+                self.logEdit.append(datetime.datetime.now().strftime("%H:%M:%S") + ": " + message)
             finally:
                 addMessageToChat(self.chat, "me: " + message)
 
@@ -305,7 +313,7 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
                 while True:
                     strng = img.read()
                     if not strng:
-                        self.client.sendMessage(Message(b'1', 'img', basename , True))
+                        self.client.sendMessage(Message(b'1', 'img', basename, True))
                         break
 
                     self.client.sendMessage(Message(strng, 'img', basename, True))
@@ -340,6 +348,7 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
 
     def __del__(self):
         self.client.close()
+        self.server.close()
 
 
 def main():
