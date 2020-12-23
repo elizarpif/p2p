@@ -17,3 +17,6 @@ python main.py 9002
 ## Скриншоты
 
 ![Сообщения в чате](https://github.com/elizarpif/p2p/blob/develop/screenshots/6.png)
+
+
+![Изображение в чате](https://github.com/elizarpif/p2p/blob/send-files/screenshots/7.png)
