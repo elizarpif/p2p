@@ -12,7 +12,7 @@
 ## Запуск
 
 ```shell script
- pyuic5 resources/messenger.ui -o resources/messenger.py 
+pyuic5 resources/messenger.ui -o resources/messenger.py 
 
 python main.py 9002
 ```
@@ -21,4 +21,6 @@ python main.py 9002
 ![Сообщения в чате](https://github.com/elizarpif/p2p/blob/develop/screenshots/6.png)
 
 
-![Изображение в чате](https://github.com/elizarpif/p2p/blob/send-files/screenshots/7.png)
+![Изображение в чате](https://github.com/elizarpif/p2p/blob/develop/screenshots/7.png)
+
+![Два клиента](https://github.com/elizarpif/p2p/blob/develop/screenshots/p2p.png)

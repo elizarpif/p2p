@@ -119,7 +119,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "Мессенджер"))
         self.addrLn.setText(_translate("MainWindow", "127.0.0.1"))
         self.addrLb.setText(_translate("MainWindow", "Address"))
         self.sendButton.setText(_translate("MainWindow", "Send"))
