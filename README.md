@@ -12,6 +12,8 @@
 ## Запуск
 
 ```shell script
+ pyuic5 resources/messenger.ui -o resources/messenger.py 
+
 python main.py 9002
 ```
 ## Скриншоты

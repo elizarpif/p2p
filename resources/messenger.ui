@@ -109,9 +109,9 @@
     <property name="geometry">
      <rect>
       <x>90</x>
-      <y>450</y>
+      <y>440</y>
       <width>421</width>
-      <height>21</height>
+      <height>41</height>
      </rect>
     </property>
    </widget>
@@ -161,7 +161,7 @@
    </widget>
    <widget class="QTextEdit" name="chat">
     <property name="enabled">
-     <bool>false</bool>
+     <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
@@ -177,6 +177,9 @@
      border-width: 2px;
      border-radius: 10px;
 }</string>
+    </property>
+    <property name="readOnly">
+     <bool>true</bool>
     </property>
     <property name="html">
      <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -292,9 +295,9 @@ p, li { white-space: pre-wrap; }
     <property name="geometry">
      <rect>
       <x>90</x>
-      <y>480</y>
+      <y>500</y>
       <width>421</width>
-      <height>81</height>
+      <height>61</height>
      </rect>
     </property>
    </widget>

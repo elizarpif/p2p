@@ -44,7 +44,7 @@ class Ui_MainWindow(object):
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.lineEdit.setGeometry(QtCore.QRect(90, 450, 421, 21))
+        self.lineEdit.setGeometry(QtCore.QRect(90, 440, 421, 41))
         self.lineEdit.setObjectName("lineEdit")
         self.addrLn = QtWidgets.QLineEdit(self.centralwidget)
         self.addrLn.setGeometry(QtCore.QRect(90, 30, 131, 21))
@@ -59,13 +59,14 @@ class Ui_MainWindow(object):
         self.sendButton.setGeometry(QtCore.QRect(520, 440, 131, 41))
         self.sendButton.setObjectName("sendButton")
         self.chat = QtWidgets.QTextEdit(self.centralwidget)
-        self.chat.setEnabled(False)
+        self.chat.setEnabled(True)
         self.chat.setGeometry(QtCore.QRect(90, 70, 421, 361))
         self.chat.setStyleSheet("QTextEdit: {\n"
 " border-style: outset;\n"
 "     border-width: 2px;\n"
 "     border-radius: 10px;\n"
 "}")
+        self.chat.setReadOnly(True)
         self.chat.setObjectName("chat")
         self.logLabel = QtWidgets.QLabel(self.centralwidget)
         self.logLabel.setGeometry(QtCore.QRect(377, 30, 141, 20))
@@ -99,7 +100,7 @@ class Ui_MainWindow(object):
         self.label.setObjectName("label")
         self.logEdit = QtWidgets.QTextEdit(self.centralwidget)
         self.logEdit.setEnabled(False)
-        self.logEdit.setGeometry(QtCore.QRect(90, 480, 421, 81))
+        self.logEdit.setGeometry(QtCore.QRect(90, 500, 421, 61))
         self.logEdit.setObjectName("logEdit")
         self.fileButton = QtWidgets.QPushButton(self.centralwidget)
         self.fileButton.setGeometry(QtCore.QRect(660, 440, 121, 41))

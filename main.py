@@ -1,5 +1,5 @@
-
 from PyQt5 import QtCore, QtGui, QtWidgets
+import rsa
 import resources.messenger as msg
 import sys
 import datetime
@@ -63,17 +63,18 @@ class Server(Thread):
     folder: str
     isStopThread: bool
 
-    def __init__(self, textEdit, ip='127.0.0.1', port=9000):
+    def __init__(self, textEdit, privKey, ip='127.0.0.1', port=9000):
         Thread.__init__(self)
         self.sock = socket()
         self.sock.bind((ip, port))
         self.sock.listen(1)
 
         self.textChat = textEdit
+        self.privKey = privKey
 
         self.isStopThread = False
 
-        self.folder = os.path.join(os.getcwd(), "files")
+        self.folder = os.path.join(os.getcwd(), "files"+str(port))
         try:
             os.stat(self.folder)
         except:
@@ -107,7 +108,8 @@ class Server(Thread):
                     print(f"data = {msg.extension}, addr = {addr}")
 
                     if msg.extension == "msg":
-                        addMessageToChat(self.textChat, "from some client: " + msg.baseMessage)
+                        baseMsg = rsa.decrypt(msg.baseMessage, self.privKey)
+                        addMessageToChat(self.textChat, "from some client: " + baseMsg.decode('utf8'))
 
                     if msg.extension == "file":
                         if not temp.isOpen:
@@ -142,8 +144,10 @@ class Server(Thread):
                     res = conn.recv(1024)
                 except:
                     e = sys.exc_info()[0]
-                    print("long message ", e)
+
+                    print("ощибка ", e)
                     res += conn.recv(1024)
+                    # res = None
         except:
             print("cannot receive")
             return
@@ -251,8 +255,18 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
         self.logEdit.setFontItalic(True)
         self.logEdit.setStyleSheet("QTextEdit {color:#822E1C}")
 
+        with open('id_rsa_public.pem', mode='rb') as public_file:
+            key_data = public_file.read()
+            pubkey = rsa.PublicKey.load_pkcs1(key_data)
+            self.public_key = pubkey
+
+        with open('id_rsa.pem', mode='rb') as priv_file:
+            key_data = priv_file.read()
+            privkey = rsa.PrivateKey.load_pkcs1(key_data)
+            self.private_kay = privkey
+
         self.currentAddr.setText(f"127.0.0.1:{port}")
-        self.server = Server(self.chat, '127.0.0.1', port)
+        self.server = Server(self.chat, privkey, '127.0.0.1', port)
         self.server.start()
 
         self.client = Client()
@@ -289,7 +303,9 @@ class ExampleApp(QtWidgets.QMainWindow, msg.Ui_MainWindow):
 
         if message != emptyMessage:
             try:
-                self.client.send(message)
+                msgutf8 = message.encode('utf8')
+                cipherMsg = rsa.encrypt(msgutf8, self.public_key)
+                self.client.send(cipherMsg)
             except:
                 message += " (cannot send!)"
                 self.logEdit.append(datetime.datetime.now().strftime("%H:%M:%S") + ": " + message)
